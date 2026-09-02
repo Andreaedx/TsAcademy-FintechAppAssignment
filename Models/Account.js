@@ -5,7 +5,13 @@ const accountSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-        unique: true
+        unique: true,
+        index: true
+    },
+    bvn: {
+        type: String,
+        required: true,
+        trim: true
     },
     accountNumber: {
         type: String,
@@ -13,16 +19,24 @@ const accountSchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
+    accountName: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    balance: {
+        type: Number,
+        default: 0
+    },
+    currency: {
+        type: String,
+        default: 'NGN'
+    },
     bankCode: {
         type: String,
         required: true,
         trim: true
     },
-    bankName: {
-        type: String,
-        required: true,
-        trim: true
-    }
 },
 
 {timestamps: true}

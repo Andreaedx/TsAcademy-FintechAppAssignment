@@ -6,66 +6,76 @@ let tokenExpireAt = null
 const TOKEN_REFRESH_BUFFER = 60 * 1000;// 1 minutes
 
 //Nibss Api request
+
+// const nibssApi = async (url, options = {}) => {
+//     try{
+//         const Response = await axios({
+//             url,
+//             ...options
+//         });
+
+//         return Response.data;
+
+//     } catch (error) {
+//         const responseData = error.response?.data;
+//         const message = responseData?.message || (typeof responseData === 'string' ? responseData : error.message) || 'External API request failed';
+
+//         const apiError = new Error(message);
+//         apiError.statusCode = error.response?.status || 500;
+//         apiError.data = responseData;
+        
+//         throw apiError;
+
+//     }
+// }
+
+//Login to NIBSS and obtain JWT token
+
 const nibssApi = async (url, options = {}) => {
-    try{
-        const Response = await axios({
+    try {
+        const response = await axios({
             url,
             ...options
         });
 
-        return Response.data;
+        console.log('NIBSS SUCCESS:', {
+            url,
+            status: response.status,
+            data: response.data
+        });
+
+        return response.data;
 
     } catch (error) {
-        
-        // const responseData = error.response?.data;
-        // const message = responseData?.message || (typeof responseData === 'string' ? responseData : error.message) || 'External API request failed';
+        console.error('NIBSS API ERROR:', {
+            url,
+            method: options.method,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            headers: error.response?.headers,
+            message: error.message
+        });
 
-        // const apiError = new Error(message);
-        // apiError.statusCode = error.response?.status || 500;
-        // apiError.data = responseData;
-        
-        //throw apiError;
+        const responseData = error.response?.data;
 
-    console.error("NIBSS request failed");
-    console.error("Message:", error.message);
-    console.error("Code:", error.code);
-    console.error("URL:", error.config?.url);
-    console.error("Method:", error.config?.method);
-    console.error("Status:", error.response?.status);
-    console.error("Response:", error.response?.data);
-    console.error("Headers:", error.response?.headers);
+        const message =
+            responseData?.message ||
+            (typeof responseData === 'string'
+                ? responseData
+                : error.message) ||
+            'External API request failed';
 
+        const apiError = new Error(message);
+        apiError.statusCode = error.response?.status || 500;
+        apiError.data = responseData;
 
-        // if (error.request && !error.response) {
-        //     console.error("Request was sent but no response was received.");
-        // }
-
-        // if (error.response) {
-        //     console.error("NIBSS server responded with an error.");
-        // }
-
-        if (error.response?.status === 409) {
-            return error.response.data;
-        }
-
-        // console.error("=====================================");
-
-    throw error;
-
+        throw apiError;
     }
-}
+};
 
-//Login to NIBSS and obtain JWT token
+
 const fintechLogin = async () => {
-
-    console.log('NIBSS LOGIN URL:', `${process.env.BASE_URL}/api/auth/token`);
-
-    console.log('API KEY LOADED:', !!process.env.API_KEY);
-    console.log('API SECRET LOADED:', !!process.env.API_SECRET);
-
-    console.log('API KEY LENGTH:', process.env.API_KEY?.length);
-    console.log('API SECRET LENGTH:', process.env.API_SECRET?.length);
-
 
     return await nibssApi(
         `${process.env.BASE_URL}/api/auth/token`,
@@ -101,7 +111,6 @@ const getNibssToken = async () => {
     if(!loginResponse?.token){
         throw new Error('NIBSS Authentication did not return a token');
     }
-
     cachedToken = loginResponse.token;
 
     //Decode JWT token to get the ExpireIn payload
@@ -111,19 +120,21 @@ const getNibssToken = async () => {
     }
 
     try {
-    const payload = JSON.parse( Buffer.from(tokenParts[1], 'base64url').toString('utf8'));
-    if(!payload){
-        throw new Error('Nibss token doesn\'t contain expireIn');
-    }
-
-    tokenExpireAt = payload.exp * 1000;
-
+        const payload = JSON.parse( Buffer.from(tokenParts[1], 'base64url').toString('utf8'));
+        if(!payload.exp){
+            throw new Error('Nibss token doesn\'t contain expireIn');
+        }
+        tokenExpireAt = payload.exp * 1000;
     } catch (error) {
         throw new Error(' Unable to decode NIBSS token');
     }
 
     return cachedToken;
 }
+
+// const generateBvn = () => {
+//     return math.Floor(10000000000 + math.Random() * 90000000000).toString();
+// };
 
 const insertBvn = async ({
     bvn,
@@ -184,7 +195,7 @@ const createAccount = async ({
                 Authorization: `Bearer ${accessToken}`
             },
             data: {
-                kycType: 'BVN',
+                kycType: 'bvn',
                 kycID,
                 dob
             }
