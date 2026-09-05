@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { response } = require('express');
 
 let cachedToken = null;
 let tokenExpireAt = null
@@ -6,31 +7,6 @@ let tokenExpireAt = null
 const TOKEN_REFRESH_BUFFER = 60 * 1000;// 1 minutes
 
 //Nibss Api request
-
-// const nibssApi = async (url, options = {}) => {
-//     try{
-//         const Response = await axios({
-//             url,
-//             ...options
-//         });
-
-//         return Response.data;
-
-//     } catch (error) {
-//         const responseData = error.response?.data;
-//         const message = responseData?.message || (typeof responseData === 'string' ? responseData : error.message) || 'External API request failed';
-
-//         const apiError = new Error(message);
-//         apiError.statusCode = error.response?.status || 500;
-//         apiError.data = responseData;
-        
-//         throw apiError;
-
-//     }
-// }
-
-//Login to NIBSS and obtain JWT token
-
 const nibssApi = async (url, options = {}) => {
     try {
         const response = await axios({
@@ -38,25 +14,9 @@ const nibssApi = async (url, options = {}) => {
             ...options
         });
 
-        console.log('NIBSS SUCCESS:', {
-            url,
-            status: response.status,
-            data: response.data
-        });
-
         return response.data;
 
     } catch (error) {
-        console.error('NIBSS API ERROR:', {
-            url,
-            method: options.method,
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            data: error.response?.data,
-            headers: error.response?.headers,
-            message: error.message
-        });
-
         const responseData = error.response?.data;
 
         const message =
@@ -203,11 +163,60 @@ const createAccount = async ({
     );
 };
 
+const nameEnquiry = async (to) => {
+    const accessToken = await getNibssToken();
+
+    const response = await axios({
+        method: 'GET',
+        headers: {
+            'Accept': '*/*',
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`
+        },
+        params: {
+            accountNumber: to
+        }
+    });
+
+    return response.data;
+};
+
+const transferFunds = async({ from, to, amount, reference}) => {
+
+    const accessToken = await getNibssToken();
+
+    const response = await axios({
+        method: 'POST',
+        headers: {
+            'Accept': '*/*',
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`
+        },
+        data: {
+            from,
+            to,
+            amount
+        }
+    });
+    const data = response.data;
+
+    return {
+        success: data.status === 'SUCCESS',
+        providerReference: data.transactionId,
+        amount: data.amount,
+        from: data.from,
+        to: data.to,
+        message: data.message
+    }
+};
+
 
 module.exports = {
-    fintechLogin,
-    getNibssToken,
+    // fintechLogin,
+    // getNibssToken,
     insertBvn,
     validateBvn,
-    createAccount
+    createAccount,
+    transferFunds,
+    nameEnquiry
 }

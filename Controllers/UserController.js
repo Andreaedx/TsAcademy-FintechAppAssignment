@@ -2,6 +2,7 @@ const User = require('../Models/User');
 const Account = require('../Models/Account');
 const { insertBvn, validateBvn, createAccount } = require('../services/nibssAdapter');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 //fintech onoboarding
 exports.registerUser = async (req, res) => {
@@ -25,7 +26,7 @@ exports.registerUser = async (req, res) => {
 
         //check if bvn already exist
         const existingUser = await User.findOne({ bvn: bvn });
-        if(existingUser?.accountNumber){
+        if(existingUser){
             return res.status(409).json({ sucess: false, message: 'BVN already registered' });
         }
 
@@ -127,6 +128,51 @@ exports.registerUser = async (req, res) => {
             success: false,
             message: error.message || 'User Registration Failed',
             data: error.data || null
+        });
+    }
+};
+
+exports.loginUser = async (req, res) => {
+
+    try {
+        const { email, password } = req.body
+
+        if(!email || !password){
+            return res.status(400).json({
+                status: 'failed',
+                message: 'Invalid email and password!'
+            });
+        }
+
+        const user = await User.findOne({ email: email }).select('+password');
+console.log('Email received:', email);
+console.log('User found:', !!user);
+        if(!user){
+            return res.status(401).json({
+                message: 'Invalid email and password!'
+            });
+        }
+console.log('Stored password:', user.password);
+console.log('Password received:', password);
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if(!isPasswordValid){
+            return res.status(401).json({
+                message: 'Invalid email and password!'
+            });
+        }
+
+        const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_SECRET, {expiresIn: process.env.JWT_EXPIRES_IN});
+
+        res.status(200).json({
+            message: 'Login successful',
+            token
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: 'An error occurred',
+            error: error.message
         });
     }
 };

@@ -8,11 +8,12 @@ const accountSchema = new mongoose.Schema({
         unique: true,
         index: true
     },
-    bvn: {
-        type: String,
-        required: true,
-        trim: true
-    },
+    // bvn: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'bvn',
+    //     required: true,
+    //     trim: true
+    // },
     accountNumber: {
         type: String,
         required: true,
@@ -26,7 +27,15 @@ const accountSchema = new mongoose.Schema({
     },
     balance: {
         type: Number,
-        default: 0
+        required: true,
+        default: 0,
+        min: 0
+    },
+    availableBalance: {
+        type: Number,
+        required: true,
+        default: 0,
+        min: 0
     },
     currency: {
         type: String,
