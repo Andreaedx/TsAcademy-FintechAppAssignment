@@ -166,18 +166,19 @@ const createAccount = async ({
 const nameEnquiry = async (to) => {
     const accessToken = await getNibssToken();
 
-    const response = await axios({
-        method: 'GET',
-        headers: {
-            'Accept': '*/*',
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`
-        },
-        params: {
-            accountNumber: to
+    const response = await axios(
+        `${process.env.BASE_URL}/api/account/name-enquiry/${to}`,
+        {
+            method: 'GET',
+            headers: {
+                'Accept': '*/*',
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`
+            }
         }
-    });
-
+    );
+    //for debuging
+    console.log('NAME ENQUIRY RESPONSE:', response.data);
     return response.data;
 };
 
@@ -185,35 +186,39 @@ const transferFunds = async({ from, to, amount, reference}) => {
 
     const accessToken = await getNibssToken();
 
-    const response = await axios({
-        method: 'POST',
-        headers: {
-            'Accept': '*/*',
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`
-        },
-        data: {
-            from,
-            to,
-            amount
+    const response = await axios(
+        `${process.env.BASE_URL}/api/transfer`,
+        {
+            method: 'POST',
+            headers: {
+                'Accept': '*/*',
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`
+            },
+            data: {
+                from,
+                to,
+                amount,
+                reference
+            }
         }
-    });
+    );
+    //for debugging
+    console.log('TRANSFER PROVIDER RESPONSE:', response.data);
     const data = response.data;
 
     return {
         success: data.status === 'SUCCESS',
-        providerReference: data.transactionId,
+        providerReference: data.reference,
         amount: data.amount,
-        from: data.from,
-        to: data.to,
-        message: data.message
-    }
+        from: data.senderAccount,
+        to: data.receiverAccount,
+        message: data.status
+    };
 };
 
 
 module.exports = {
-    // fintechLogin,
-    // getNibssToken,
     insertBvn,
     validateBvn,
     createAccount,

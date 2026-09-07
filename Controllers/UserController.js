@@ -145,15 +145,12 @@ exports.loginUser = async (req, res) => {
         }
 
         const user = await User.findOne({ email: email }).select('+password');
-console.log('Email received:', email);
-console.log('User found:', !!user);
+
         if(!user){
             return res.status(401).json({
                 message: 'Invalid email and password!'
             });
         }
-console.log('Stored password:', user.password);
-console.log('Password received:', password);
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if(!isPasswordValid){

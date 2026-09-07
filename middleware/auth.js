@@ -2,28 +2,32 @@ const jwt = require('jsonwebtoken');
 
 const protect = async (req, res, next) => {
     const authHeader = req.headers.authorization;
-    // 1. Check if the Authorization header exists and starts with "Bearer"
-    if (!authHeader || !authHeader.startsWith('Bearer')) {
-        try {
-            // 2. Extract the token string (splits "Bearer <token>" by space)
-            token = authHeader.split(' ')[1];
 
-            // 3. Verify the token with your secret key
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-            // 4. Attach the decoded payload to req.user 🎯
-            req.user = decoded; 
-
-            // 5. Move to the next middleware/controller
-            return next();
-        } catch (error) {
-            return res.status(401).json({ status: 'error', message: 'Not authorized, token failed' });
-        }
+    // Check if Authorization header exists and has Bearer token
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({
+            status: 'error',
+            message: 'Not authorized, no token provided'
+        });
     }
 
-    // If no token is provided at all
-    if (!token) {
-        return res.status(401).json({ status: 'error', message: 'Not authorized, no token provided' });
+    // Extract token from "Bearer <token>"
+    const token = authHeader.split(' ')[1];
+
+    try {
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Attach decoded user information to request
+        req.user = decoded;
+
+        // Continue to the controller
+        return next();
+    } catch (error) {
+        return res.status(401).json({
+            status: 'error',
+            message: 'Not authorized, token failed'
+        });
     }
 };
 

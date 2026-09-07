@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Account = require('../Models/Account');
 const Transaction = require('../Models/Transaction');
 const { nameEnquiry, transferFunds } = require('../services/nibssAdapter');
+const crypto = require('crypto');
 
 exports.transfer = async (req, res) => {
     const session = await mongoose.startSession();
@@ -34,6 +35,8 @@ console.log('USER ID FROM JWT:', userId);
 
         //Get sender account
         const senderAccount = await Account.findOne({ user: userId }).session(session);
+        //for debuging
+        console.log(senderAccount);
 
 console.log('SENDER ACCOUNT:', senderAccount);
         //prevent transfering to own account
@@ -55,47 +58,56 @@ console.log('SENDER ACCOUNT:', senderAccount);
         };
 
         //nameEnquiry
-        let enquiry;
-        try {
-            const enquiry = await nameEnquiry(to);
-            if(!enquiry || enquiry.status !== 'success'){
-                return res.status(404).json({
-                    status: 'error',
-                    message: 'Invalid destination account'
-                });
-            }
-
-        } catch (error) {
-            throw new Error('Internal Error');
+        const enquiry = await nameEnquiry(to);
+        if (!enquiry || !enquiry.accountNumber || String(enquiry.accountNumber) !== String(to)) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'Invalid destination account'
+            });
         }
 
+
         const accountName = enquiry?.accountName;
+
+        //generate unique reference
+        // const reference = `TRX-${Date.now()}`;
+        const reference = crypto.randomInt(
+            100000000000,
+            1000000000000
+        ).toString();
 
         //call transfer api
         const transferResponse = await transferFunds({
             from: senderAccount.accountNumber,
             to,
-            amount,
-            reference
+            amount
         });
-
-        if(!transferResponse || transferResponse.status !== 'SUCCESS'){
+        if (!transferResponse || !transferResponse.success) {
             throw new Error('Transfer Failed');
         }
+
 
         //Debit sender
         senderAccount.balance -= amount;
         await senderAccount.save({session});
+        
+        const transaction = await Transaction.create(
+            [{
+                user: req.user.id,
+                fromAccount: senderAccount.accountNumber,
+                toAccount: to,
+                beneficiaryName: enquiry.accountName,
+                amount: amount,
+                type: 'debit',
+                status: 'success',
+                reference: reference,
+                providerReference: transferResponse.providerReference,
+                currency: 'NGN',
+                // narration: narration,
+                completedAt: new Date()
+            }],{ session }
+        );
 
-        await Transaction.create({
-            user: userId,
-            fromAccount: senderAccount.accountNumber,
-            toAccount: to,
-            amount,
-            type: 'debit',
-            status: 'success',
-            providerReference: transferResponse.transactionId
-        }, {session});
 
         await session.commitTransaction();
 
