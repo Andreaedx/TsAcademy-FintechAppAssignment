@@ -37,7 +37,7 @@ const nibssApi = async (url, options = {}) => {
 
 const fintechLogin = async () => {
 
-    return await nibssApi(
+    const response = await nibssApi(
         `${process.env.BASE_URL}/api/auth/token`,
         {
             method: 'POST',
@@ -50,7 +50,9 @@ const fintechLogin = async () => {
                 'apiSecret': process.env.API_SECRET
             }
         }
-    );
+    )
+
+    return response;
 };
 
 
@@ -103,7 +105,7 @@ const insertBvn = async ({
     dob,
     phone
 }) => {
-    return await nibssApi(
+    const response = await nibssApi(
         `${process.env.BASE_URL}/api/insertBvn`, 
         {
             method: 'POST',
@@ -119,12 +121,13 @@ const insertBvn = async ({
                 phone
             }
         }
-    );
+    )
 
+    return response.data;
 };
 
 const validateBvn = async (bvn) => {
-    return await nibssApi(
+    const response = await nibssApi(
         `${process.env.BASE_URL}/api/validateBvn`,
         {
             method: 'POST',
@@ -136,7 +139,9 @@ const validateBvn = async (bvn) => {
                 bvn
             }
         }
-    );
+    )
+
+    return response.data;
 };
 
 const createAccount = async ({
@@ -145,7 +150,7 @@ const createAccount = async ({
 }) => {
     const accessToken = await getNibssToken(); 
 
-    return await nibssApi(
+    const response = await nibssApi(
         `${process.env.BASE_URL}/api/account/create`,
         {
             method: 'POST',
@@ -161,6 +166,8 @@ const createAccount = async ({
             }
         }
     );
+
+    return response.data;
 };
 
 const nameEnquiry = async (to) => {
@@ -177,8 +184,7 @@ const nameEnquiry = async (to) => {
             }
         }
     );
-    //for debuging
-    console.log('NAME ENQUIRY RESPONSE:', response.data);
+
     return response.data;
 };
 
@@ -199,12 +205,10 @@ const transferFunds = async({ from, to, amount, reference}) => {
                 from,
                 to,
                 amount,
-                reference
             }
         }
     );
-    //for debugging
-    console.log('TRANSFER PROVIDER RESPONSE:', response.data);
+
     const data = response.data;
 
     return {

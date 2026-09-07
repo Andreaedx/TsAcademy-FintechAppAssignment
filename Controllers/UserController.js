@@ -63,8 +63,6 @@ exports.registerUser = async (req, res) => {
             dob
         });
 
-        // const accountData = accountResponse.account;
-
         if(!accountResponse?.account?.accountNumber){
             return res.status(400).json({ success: false, message: 'Unable to Create Account' });
         };

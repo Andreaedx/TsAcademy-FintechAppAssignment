@@ -10,8 +10,8 @@ exports.transfer = async (req, res) => {
     try {
 
         const userId = req.user.id;
-
-console.log('USER ID FROM JWT:', userId);
+        
+        // console.log('USER ID FROM JWT:', userId);
 
         const { to, amount } = req.body;
 
@@ -35,10 +35,7 @@ console.log('USER ID FROM JWT:', userId);
 
         //Get sender account
         const senderAccount = await Account.findOne({ user: userId }).session(session);
-        //for debuging
-        console.log(senderAccount);
-
-console.log('SENDER ACCOUNT:', senderAccount);
+        
         //prevent transfering to own account
         if (senderAccount.accountNumber === to) {
             throw new Error('You cannot transfer to your own account');
