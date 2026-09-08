@@ -238,11 +238,29 @@ const getTrxBYReference = async (reference) => {
     return response.data;
 }
 
+const getAllAccounts = async () => {
+    const accessToken = await getNibssToken();
+
+    const response = await nibss(
+        `${process.env.BASE_URL}/api/accounts`,
+        {
+            method: 'GET',
+            header: {
+                'Accepts': '*/*',
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`
+            },
+        }
+    )
+    return response.data;
+}
+
 module.exports = {
     insertBvn,
     validateBvn,
     createAccount,
     transferFunds,
     nameEnquiry,
-    getTrxBYReference
+    getTrxBYReference,
+    getAllAccounts
 }
