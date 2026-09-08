@@ -132,3 +132,43 @@ exports.transfer = async (req, res) => {
         session.endSession();
     }
 };
+
+exports.getTransactionByReference = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const { reference } = req.params;
+
+        if(!reference){
+            return res.status(400).json({
+                status: 'failed',
+                message: 'Invalid'
+            });
+        }
+
+        const transaction = await Transaction.findOne({
+            providerReference: reference,
+            user: userId
+        });
+
+        if(!transaction){
+            return res.status(404).json({
+                status: 'error',
+                message: 'Transaction not found'
+            });
+        }
+
+        return res.status(200).json({
+            status: 'success',
+            transaction
+        });
+
+    } catch(error) {
+        console.error('TRANSACTION ERROR:', error);
+
+        return res.status(500).json({
+            status: error,
+            message: 'Internal Error'
+        });
+    }
+};

@@ -188,7 +188,7 @@ const nameEnquiry = async (to) => {
     return response.data;
 };
 
-const transferFunds = async({ from, to, amount, reference}) => {
+const transferFunds = async({ from, to, amount }) => {
 
     const accessToken = await getNibssToken();
 
@@ -221,11 +221,28 @@ const transferFunds = async({ from, to, amount, reference}) => {
     };
 };
 
+const getTrxBYReference = async (reference) => {
+    const accessToken = await getNibssToken();
+    
+    const response = await nibssApi(
+        `${process.env.BASE_URL}/api/transaction/${reference}`,
+        {
+            method: 'GET',
+            header: {
+                'Accepts': '*/*',
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`
+            }
+        }
+    )  
+    return response.data;
+}
 
 module.exports = {
     insertBvn,
     validateBvn,
     createAccount,
     transferFunds,
-    nameEnquiry
+    nameEnquiry,
+    getTrxBYReference
 }

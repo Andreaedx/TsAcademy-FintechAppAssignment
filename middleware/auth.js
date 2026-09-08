@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const User = require('../Models/User');
 
 const protect = async (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -18,8 +19,15 @@ const protect = async (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // Attach decoded user information to request
-        req.user = decoded;
+        //find the user by id 
+        const user = User.findById(decoded.id);
+        if(!user){
+            return res.status(401).json({
+                status: 'error',
+                message: 'User no longer exist'
+            });
+        }
+        req.user = user;
 
         // Continue to the controller
         return next();
