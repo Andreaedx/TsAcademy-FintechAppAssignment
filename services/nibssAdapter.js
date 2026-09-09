@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { response } = require('express');
+const { ModifiedPathsSnapshot } = require('mongoose');
 
 let cachedToken = null;
 let tokenExpireAt = null
@@ -141,6 +142,32 @@ const validateBvn = async (bvn) => {
     )
     return response;
 };
+
+const InsertNin = async ({
+    nin,
+    firstName,
+    lastName,
+    dob
+}) => {
+
+    const response = await nibssApi(
+        `${process.env.BASE_URL}/api/insertNin`,
+        {
+            method: 'POST',
+            headers: {
+                'Accept': '*/*',
+                'Content-Type': 'application/json'
+            },
+            data: {
+                nin,
+                firstName,
+                lastName,
+                dob
+            }
+        }
+    )
+    return response;
+}
 
 const createAccount = async ({
     kycID,
