@@ -122,8 +122,7 @@ const insertBvn = async ({
             }
         }
     )
-
-    return response.data;
+    return response;
 };
 
 const validateBvn = async (bvn) => {
@@ -140,8 +139,7 @@ const validateBvn = async (bvn) => {
             }
         }
     )
-
-    return response.data;
+    return response;
 };
 
 const createAccount = async ({
@@ -167,7 +165,7 @@ const createAccount = async ({
         }
     );
 
-    return response.data;
+    return response;
 };
 
 const nameEnquiry = async (to) => {
@@ -221,38 +219,55 @@ const transferFunds = async({ from, to, amount }) => {
     };
 };
 
-const getTrxBYReference = async (reference) => {
+const getTrxFromNibss = async (reference) => {
     const accessToken = await getNibssToken();
     
     const response = await nibssApi(
         `${process.env.BASE_URL}/api/transaction/${reference}`,
         {
             method: 'GET',
-            header: {
-                'Accepts': '*/*',
+            headers: {
+                'Accept': '*/*',
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${accessToken}`
             }
         }
     )  
-    return response.data;
+    return response;
 }
 
-const getAllAccounts = async () => {
+const getBalanceFromNibss = async (accountNumber) => {
     const accessToken = await getNibssToken();
 
-    const response = await nibss(
+    const response = await nibssApi(
+        `${process.env.BASE_URL}/api/account/balance/${accountNumber}`,
+        {
+            method: 'GET',
+            headers: {
+                'Accept': '*/*',
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`
+            }
+        }
+    )
+    return response;
+};
+
+const getAccountsFromNibss = async () => {
+    const accessToken = await getNibssToken();
+
+    const response = await nibssApi(
         `${process.env.BASE_URL}/api/accounts`,
         {
             method: 'GET',
-            header: {
-                'Accepts': '*/*',
+            headers: {
+                'Accept': '*/*',
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${accessToken}`
             },
         }
     )
-    return response.data;
+    return response;
 }
 
 module.exports = {
@@ -261,6 +276,7 @@ module.exports = {
     createAccount,
     transferFunds,
     nameEnquiry,
-    getTrxBYReference,
-    getAllAccounts
+    getTrxFromNibss,
+    getBalanceFromNibss,
+    getAccountsFromNibss
 }

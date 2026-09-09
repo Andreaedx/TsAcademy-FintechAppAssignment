@@ -38,6 +38,7 @@ exports.registerUser = async (req, res) => {
             dob,
             phone
         });
+
         //if bnv already exist in nibss
         if(!bvnInsertResponse?.success){
             return res.status(409).json({

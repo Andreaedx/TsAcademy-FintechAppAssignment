@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 const Account = require('../Models/Account');
 const Transaction = require('../Models/Transaction');
-const { nameEnquiry, transferFunds } = require('../services/nibssAdapter');
+const { nameEnquiry, transferFunds, getTrxFromNibss, getBalanceFromNibss } = require('../services/nibssAdapter');
 const crypto = require('crypto');
+const { allAccounts } = require('./adminController');
 
 exports.transfer = async (req, res) => {
     const session = await mongoose.startSession();
@@ -142,15 +143,25 @@ exports.getTransactionByReference = async (req, res) => {
         if(!reference){
             return res.status(400).json({
                 status: 'failed',
-                message: 'Invalid'
+                message: 'Invalid reference'
             });
         }
 
-        const transaction = await Transaction.findOne({
+
+         // Check that the transaction belongs to the logged-in user
+        const logged_inUser = await Transaction.findOne({
             providerReference: reference,
             user: userId
         });
+        if(!logged_inUser){
+            return res.status(404).json({
+                status: 'failed',
+                message: 'Transaction not found'
+            });
+        }
 
+        //Query nibss
+        const transaction = await getTrxFromNibss(reference);
         if(!transaction){
             return res.status(404).json({
                 status: 'error',
@@ -164,7 +175,7 @@ exports.getTransactionByReference = async (req, res) => {
         });
 
     } catch(error) {
-        console.error('TRANSACTION ERROR:', error);
+        console.error('ERROR:', error);
 
         return res.status(500).json({
             status: error,
@@ -172,3 +183,49 @@ exports.getTransactionByReference = async (req, res) => {
         });
     }
 };
+
+exports.getBalancebyAccountNumber = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const { accountNumber } = req.params;
+        if(!accountNumber){
+            return res.status(400).json({
+                status: 'failed',
+                message: 'Invalid account number'
+            });
+        }
+
+        //check if the account number belongs to the logged-in user
+        const logged_inUser = await Account.findOne({
+            accountNumber: accountNumber,
+            user: userId 
+        });
+        if(!logged_inUser){
+            return res.status(401).json({
+                status: 'failed',
+                message: 'Balance not found'
+            });
+        }
+
+        const balance = await getBalanceFromNibss(accountNumber);
+        if(!balance){
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid'
+            })
+        }
+
+        return res.status(200).json({
+            status: 'success',
+            balance
+        });
+    } catch (error) {
+        console.error('ERROR:', error);
+
+        return res.status(500).json({
+            status: 'error',
+            message: 'Internal error'
+        });
+    }
+}

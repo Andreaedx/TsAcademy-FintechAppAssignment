@@ -1,10 +1,10 @@
-const { getAllAccounts } = require('../services/nibssAdapter')
+const { getAccountsFromNibss } = require('../services/nibssAdapter')
 
 exports.allAccounts = async (req, res) => {
 
     try {
 
-        const accounts = await getAllAccounts();
+        const accounts = await getAccountsFromNibss();
 
         res.status(200).json({
             status: 'success',
