@@ -8,12 +8,6 @@ const accountSchema = new mongoose.Schema({
         unique: true,
         index: true
     },
-    // bvn: {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: 'bvn',
-    //     required: true,
-    //     trim: true
-    // },
     accountNumber: {
         type: String,
         required: true,

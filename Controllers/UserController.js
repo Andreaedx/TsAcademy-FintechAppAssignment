@@ -1,76 +1,167 @@
 const User = require('../Models/User');
 const Account = require('../Models/Account');
-const { insertBvn, validateBvn, createAccount } = require('../services/nibssAdapter');
+const KYC = require('../Models/Kyc');
+const { insertBvn, validateBvn, insertNin, validateNin, createAccount, } = require('../services/nibssAdapter');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 //fintech onoboarding
 exports.registerUser = async (req, res) => {
     if(!req.body || Object.keys(req.body).length === 0){
-        return res.status(400).json({ success: false, message: 'request body cannot be empty' });
+        return res.status(400).json({ 
+            success: false, 
+            message: 'request body cannot be empty' 
+        });
     }
 
     try {
-        const { firstName, lastName, email, phone, bvn, dob } = req.body;
+        const { firstName, lastName, email, phone, bvn, nin, dob } = req.body;
 
         //validate inputs
-        if(!firstName || !lastName || !email || !phone || !bvn || !dob || !req.body.password){
-            return res.status(400).json({ success: false, message: "All fields are required" });
+        if(!firstName || !lastName || !email || !phone || !dob || !req.body.password){
+            return res.status(400).json({ 
+                success: false, 
+                message: "All fields are required" 
+            });
         }
 
         //check if email already exist
         const existingEmail = await User.findOne({ email: email.toLowerCase() });
         if(existingEmail){
-            return res.status(409).json({ success: false, message: 'email already exist' });
+            return res.status(409).json({ 
+                success: false, 
+                message: 'email already exist' 
+            });
+        }
+        
+        if (bvn && !/^\d{11}$/.test(bvn)) {
+            return res.status(400).json({
+                success: false,
+                message: 'BVN must be 11 digits'
+            });
+        }
+        
+        if (nin && !/^\d{11}$/.test(nin)) {
+            return res.status(400).json({
+                success: false,
+                message: 'NIN must be 11 digits'
+            });
+        }
+
+
+        // User must provide at least BVN or NIN
+        if (!bvn && !nin) {
+            return res.status(400).json({
+                success: false,
+                message: 'Either BVN or NIN is required'
+            });
         }
 
         //check if bvn already exist
-        const existingUser = await User.findOne({ bvn: bvn });
-        if(existingUser){
-            return res.status(409).json({ sucess: false, message: 'BVN already registered' });
+        if(bvn){
+            const existingUser = await User.findOne({ bvn: bvn });
+            if(existingUser){
+                return res.status(409).json({ 
+                    sucess: false, 
+                    message: 'BVN already registered' 
+                });
+            }
         }
 
-        //Insert BVN
-        const bvnInsertResponse = await insertBvn({
-            bvn,
-            firstName,
-            lastName,
-            dob,
-            phone
-        });
+        //check if nin already exist
+        if(nin){
+            const existingUser = await User.findOne({ nin: nin });
+            if(existingUser){
+                return res.status(409).json({ 
+                    sucess: false, 
+                    message: 'NIN already registered' 
+                });
+            }
+        }
 
-        //if bnv already exist in nibss
-        if(!bvnInsertResponse?.success){
-            return res.status(409).json({
-                success: false,
-                message: bvnInsertResponse?.message ||
-                'Unable to register BVN'
+        //Insert and validate BVN if provided
+        let bvnInsertResponse = null;
+        let bvnValidationResponse = null;
+        if(bvn){
+            bvnInsertResponse = await insertBvn({
+                bvn,
+                firstName,
+                lastName,
+                dob,
+                phone
             });
-        };
+            
+            //if bvn already exist in nibss
+            if(!bvnInsertResponse?.success){
+                return res.status(409).json({
+                    success: false,
+                    message: bvnInsertResponse?.message ||
+                    'Unable to register BVN'
+                });
+            };
 
-        //validate BVN
-        const bvnValidationResponse = await validateBvn(bvn);
-        if(!bvnValidationResponse?.success){
-            return res.status(400).json({
-                success: false,
-                message: bvnValidationResponse.message ||
-                'BVN validation failed'
+            //validate BVN
+            bvnValidationResponse = await validateBvn(bvn);
+            if(!bvnValidationResponse?.success){
+                return res.status(400).json({
+                    success: false,
+                    message: bvnValidationResponse.message ||
+                    'BVN validation failed'
+                });
+            };
+        }      
+
+        //Insert and validate nin if provided
+        let ninInsertResponse = null;
+        let ninValidationResponse = null;
+        if(nin){
+            ninInsertResponse = await insertNin({
+                nin,
+                firstName,
+                lastName,
+                dob,
             });
-        };
+            
+            //if nin already exist in nibss
+            if(!ninInsertResponse?.success){
+                return res.status(409).json({
+                    success: false,
+                    message: ninInsertResponse?.message ||
+                    'Unable to register NIN'
+                });
+            };
+
+            //validate NIN
+            ninValidationResponse = await validateNin(nin);
+            if(!ninValidationResponse?.success){
+                return res.status(400).json({
+                    success: false,
+                    message: ninValidationResponse.message ||
+                    'NIN validation failed'
+                });
+            };
+        }      
+
+        const kycType = bvn ? 'bvn' : 'nin';
+        const kycID = bvn || nin;
 
         //create account with nibssApi
         const accountResponse = await createAccount({
-            kycID: bvn,
+            kycType,
+            kycID,
             dob
         });
 
         if(!accountResponse?.account?.accountNumber){
-            return res.status(400).json({ success: false, message: 'Unable to Create Account' });
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Unable to Create Account' 
+            });
         };
 
 
         //create/store the new user in my database
-        const salt = await bcrypt.genSalt(2);
+        const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
         const user = new User({
@@ -78,24 +169,33 @@ exports.registerUser = async (req, res) => {
             lastName,
             email: email.toLowerCase(),
             phone,
-            bvn,
+            bvn: bvn || undefined,
+            nin: nin || undefined,
             dob,
             password: hashedPassword,
             role: 'user'
         });
-
         await user.save();
+        
+        const kyc = new KYC({
+            user: user._id,
+            bvn: bvn || undefined,
+            nin: nin || undefined,
+            bvnVerified: !!bvnValidationResponse?.success,
+            ninVerified: !!ninValidationResponse?.success,
+            kycStatus: 'verified',
+            verifiedAt: new Date()
+        });
+        await kyc.save();
 
         const account = new Account({
             user: user._id,
-            bvn,
             accountNumber: accountResponse.account.accountNumber,
             accountName: accountResponse.account.accountName,
             balance: accountResponse.account.balance,
             bankCode: accountResponse.account.bankCode,
             bankName: accountResponse.account.bankName 
         });
-
         await account.save();
 
         res.status(201).json({                                            

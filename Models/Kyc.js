@@ -10,41 +10,42 @@ const kycSchema = new mongoose.Schema(
         },
         bvn: {
             type: String,
-            select: false
-        },
-        bvnStatus: {
-            type: String,
-            enum: ['PENDING', 'VERIFIED', 'FAILED'],
-            default: 'PENDING'
+            unique: true,
+            sparse: true,
+            trim: true
         },
         nin: {
             type: String,
-            select: false
+            unique: true,
+            sparse: true,
+            trim: true
         },
-        ninStatus: {
-            type: String,
-            enum: ['PENDING', 'VERIFIED', 'FAILED'],
-            default: 'PENDING'
+        bvnVerified: {
+            type: Boolean,
+            default: false
         },
-        status: {
+        ninVerified: {
+            type: Boolean,
+            default: false
+        },
+        kycStatus: {
             type: String,
             enum: [
-                'PENDING',
-                'PARTIALLY_VERIFIED',
-                'VERIFIED',
-                'FAILED',
-                'REVIEW'
+                'pending',
+                'verified',
+                'failed',
+                'review'
             ],
-            default: 'PENDING'
+            default: 'pending'
         },
-
-        ninVerifiedAt: Date,
-        bvnVerifiedAt: Date
+        verifiedAt: {
+            type: Date
+        }
     },
     {
         timestamps: true
     }
 );
 
-const KYC = mongoose.model('KYC', kycSchema);
+const KYC = mongoose.model("KYC", kycSchema);
 module.exports = KYC;

@@ -30,12 +30,6 @@ const userSchema = new mongoose.Schema({
         select: false,
         trim: true
     },
-    bvn: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true
-    },
     dob: {
         type: Date,
         required: true

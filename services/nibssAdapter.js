@@ -31,6 +31,15 @@ const nibssApi = async (url, options = {}) => {
         apiError.statusCode = error.response?.status || 500;
         apiError.data = responseData;
 
+         console.error('NIBSS API ERROR:', {
+            message: error.message,
+            code: error.code,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            url: url
+        });
+
         throw apiError;
     }
 };
@@ -106,6 +115,7 @@ const insertBvn = async ({
     dob,
     phone
 }) => {
+
     const response = await nibssApi(
         `${process.env.BASE_URL}/api/insertBvn`, 
         {
@@ -143,12 +153,20 @@ const validateBvn = async (bvn) => {
     return response;
 };
 
-const InsertNin = async ({
+const insertNin = async ({
     nin,
     firstName,
     lastName,
     dob
 }) => {
+
+        console.log('INSERT NIN REQUEST:', {
+        url: `${process.env.BASE_URL}/api/insertNin`,
+        nin,
+        firstName,
+        lastName,
+        dob,
+    });
 
     const response = await nibssApi(
         `${process.env.BASE_URL}/api/insertNin`,
@@ -166,10 +184,40 @@ const InsertNin = async ({
             }
         }
     )
-    return response;
+    console.log('INSERT NIN RESPONSE:', response);
+    return {
+        success: true,
+        message: response?.message,
+        data: {
+            nin: response?.nin
+        }
+    }
+}
+
+const validateNin = async (nin) => {
+
+    const response = await nibssApi(
+        `${process.env.BASE_URL}/api/validateNin`,
+        {
+            method: 'POST',
+            headers: {
+                'Accept': '*/*',
+                'Content-Type': 'application/json'
+            },
+            data: {
+                nin
+            }
+        }
+    )
+    return {
+        success: !!response?.response,
+        message: response?.message,
+        data: response?.response
+    };
 }
 
 const createAccount = async ({
+    kycType,
     kycID,
     dob
 }) => {
@@ -185,7 +233,7 @@ const createAccount = async ({
                 Authorization: `Bearer ${accessToken}`
             },
             data: {
-                kycType: 'bvn',
+                kycType,
                 kycID,
                 dob
             }
@@ -300,6 +348,8 @@ const getAccountsFromNibss = async () => {
 module.exports = {
     insertBvn,
     validateBvn,
+    insertNin,
+    validateNin,
     createAccount,
     transferFunds,
     nameEnquiry,
